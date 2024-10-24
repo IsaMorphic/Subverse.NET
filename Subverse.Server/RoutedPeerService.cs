@@ -159,6 +159,11 @@ namespace Subverse.Server
             string fromEntityStr = sipRequest.Header.From.FromURI.User;
             SubversePeerId fromEntityId = SubversePeerId.FromString(fromEntityStr);
             _callerMap.TryAdd(sipRequest.Header.CallId, fromEntityId);
+            _cachedPeers.AddOrUpdate(
+                fromEntityId,
+                pid => remoteEndPoint,
+                (pid, old) => remoteEndPoint
+                );
 
             sipRequest.Header.From.FromURI.Host = "subverse";
             sipRequest.Header.Vias.UpateTopViaHeader(new IPEndPoint(IPAddress.Loopback, 5060));
