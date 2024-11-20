@@ -1,7 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using Subverse.Calculator;
 using System.Numerics;
-using System.Security.Cryptography;
+using static System.Security.Cryptography.RandomNumberGenerator;
 
 using StreamWriter writer = File.CreateText("results.csv");
 writer.AutoFlush = true;
@@ -33,15 +33,18 @@ Parallel.For(2, 9, N =>
     Parallel.For(1, 13, K =>
     {
         long totalPopCount = 0, totalPermCount = 0;
-        foreach (ulong v in PermuteBits(N * N, K)
-            .Where(x => N < 6 || K < 8 || RandomNumberGenerator.GetInt32(1 << (K + 9)) == 0))
+        IEnumerable<ulong> V = PermuteBits(N * N, K)
+            .Where(x => N < 6 || K < 8 ||
+            GetInt32(1 << (K + 12)) == 0);
+
+        Parallel.ForEach(V, (v, s) =>
         {
             BitMatrix A = new(N, v);
             BitMatrix R_n = BitMatrix.Warshall(A);
 
-            totalPopCount += BitOperations.PopCount(R_n.Bits & ~ident);
-            ++totalPermCount;
-        }
+            Interlocked.Add(ref totalPopCount, BitOperations.PopCount(R_n.Bits & ~ident));
+            Interlocked.Increment(ref totalPermCount);
+        });
 
         string line = $"{N},{K},{totalPopCount / (double)(totalPermCount * N * (N - 1))}";
         Console.WriteLine(line);
