@@ -1,12 +1,24 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using Subverse.Calculator;
 using System.Numerics;
-using static System.Security.Cryptography.RandomNumberGenerator;
+
+const int MIN_N = 2, MAX_N = 8;
+const int MIN_K = 1, MAX_K = 16;
 
 using StreamWriter writer = File.CreateText("results.csv");
 writer.AutoFlush = true;
-writer.WriteLine("N,K,P");
-Parallel.For(2, 9, N =>
+
+void WriteLine(string? s)
+{
+    Console.WriteLine(s);
+    lock (writer)
+    {
+        writer.WriteLine(s);
+    }
+}
+
+WriteLine("  N,  K, P(N,K)");
+Parallel.For(MIN_N, MAX_N + 1, N =>
 {
     ulong ident = BitMatrix.Identity(N).Bits;
     IEnumerable<ulong> PermuteBits(int M, int K)
@@ -30,28 +42,23 @@ Parallel.For(2, 9, N =>
         }
     }
 
-    Parallel.For(1, 13, K =>
+    Parallel.For(MIN_K, MAX_K + 1, K =>
     {
+        Random rng = new();
         long totalPopCount = 0, totalPermCount = 0;
-        IEnumerable<ulong> V = PermuteBits(N * N, K)
-            .Where(x => N < 6 || K < 8 ||
-            GetInt32(1 << (K + 12)) == 0);
+        IEnumerable<ulong> V = N < 6 || K < 8 ? PermuteBits(N * N, K) 
+            : PermuteBits(N * N, K).PickN(rng, 1 << 16);
 
-        Parallel.ForEach(V, (v, s) =>
+        Parallel.ForEach(V, v =>
         {
             BitMatrix A = new(N, v);
             BitMatrix R_n = BitMatrix.Warshall(A);
-
+            
             Interlocked.Add(ref totalPopCount, BitOperations.PopCount(R_n.Bits & ~ident));
             Interlocked.Increment(ref totalPermCount);
         });
 
-        string line = $"{N},{K},{totalPopCount / (double)(totalPermCount * N * (N - 1))}";
-        Console.WriteLine(line);
-
-        lock (writer)
-        {
-            writer.WriteLine(line);
-        }
+        double P = totalPopCount / (double)(totalPermCount * N * (N - 1));
+        WriteLine($"{N,3},{K,3},{P,7:F3}");
     });
 });
