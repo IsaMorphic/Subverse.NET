@@ -17,7 +17,7 @@ void WriteLine(string? s)
     }
 }
 
-WriteLine("  N,  K, P(N,K)");
+WriteLine("  N,  K, P(N:K)");
 Parallel.For(MIN_N, MAX_N + 1, N =>
 {
     ulong ident = BitMatrix.Identity(N).Bits;
