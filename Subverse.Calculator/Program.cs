@@ -46,9 +46,8 @@ Parallel.For(MIN_N, MAX_N + 1, N =>
     {
         Random rng = new();
         long totalPopCount = 0, totalPermCount = 0;
-        IEnumerable<ulong> V = N < 6 || K < 8 ? PermuteBits(N * N, K) 
-            : PermuteBits(N * N, K).PickN(rng, 1 << 14);
 
+        IList<ulong> V = PermuteBits(N * N, K).Pick(rng, 1 << 14);
         Parallel.ForEach(V, v =>
         {
             BitMatrix A = new(N, v);
